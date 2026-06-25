@@ -29,9 +29,9 @@ export class StorageImageService implements ImageService {
   }
 
   async generate(caption: string): Promise<string> {
-    const dataUrl = await this.inner.generate(caption);
-    if (dataUrl === PLACEHOLDER_IMAGE) return this.placeholderUrl;
     try {
+      const dataUrl = await this.inner.generate(caption);
+      if (dataUrl === PLACEHOLDER_IMAGE) return this.placeholderUrl;
       const { mediaType, base64 } = parseDataUrl(dataUrl);
       const bytes = Uint8Array.from(Buffer.from(base64, 'base64'));
       const ext = mediaType.split('/')[1] ?? 'png';

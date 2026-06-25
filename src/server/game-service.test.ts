@@ -72,8 +72,9 @@ describe('GameService lifecycle', () => {
     };
     const svc = newService(flaky);
     const { gameId } = await svc.createGame('Ada', 60_000);
-    const { view } = await svc.joinGame(gameId, 'Bea'); // first save fails → retry → succeeds
+    const { playerId, view } = await svc.joinGame(gameId, 'Bea'); // first save fails → retry → succeeds
     expect(view.game.players).toHaveLength(2);
+    expect(view.game.players.find((p) => p.id === playerId)).toBeDefined();
   });
 
   it('throws ConcurrencyError when conflicts never clear', async () => {
@@ -103,6 +104,7 @@ describe('GameService lifecycle', () => {
     await svc.joinGame(gameId, 'Bea');
     await svc.startGame(gameId);
     const savesBefore = saves;
+    expect(savesBefore).toBe(2); // one save for join, one for start
     await svc.getState(gameId, hostId); // no overdue deadlines → no state change → no save
     expect(saves).toBe(savesBefore);
   });

@@ -50,4 +50,12 @@ describe('StorageImageService', () => {
     });
     expect(await svc.generate('x')).toBe(PLACEHOLDER_URL);
   });
+
+  it('falls back to the placeholder URL when the inner service throws', async () => {
+    const inner: ImageService = { generate: vi.fn(async () => { throw new Error('image gen down'); }) };
+    const uploader: ImageUploader = { upload: vi.fn() };
+    const svc = new StorageImageService(inner, uploader, { placeholderUrl: PLACEHOLDER_URL });
+    expect(await svc.generate('x')).toBe(PLACEHOLDER_URL);
+    expect(uploader.upload).not.toHaveBeenCalled();
+  });
 });
