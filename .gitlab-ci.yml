@@ -1,0 +1,28 @@
+# DriftDraw CI — verifies the project on a GitLab runner (clean internet),
+# which is how we get a green/red signal since the dev laptop's corporate
+# filter blocks `npm install`. Vercel handles build + deploy separately via
+# its GitLab integration — see DEPLOYMENT.md.
+
+image: node:20
+
+stages:
+  - verify
+
+verify:
+  stage: verify
+  # Use `npm install` (not `npm ci`) for now: package-lock.json can't be
+  # regenerated on the corporate-filtered laptop, so it lags package.json.
+  # The runner resolves deps with clean internet. Once the lockfile is
+  # regenerated in a clean environment and committed, switch this to `npm ci`.
+  script:
+    - npm install
+    - npm run typecheck
+    - npm test
+  cache:
+    key:
+      files:
+        - package.json
+    paths:
+      - node_modules/
+  rules:
+    - if: $CI_COMMIT_BRANCH

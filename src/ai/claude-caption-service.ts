@@ -50,7 +50,7 @@ export class ClaudeCaptionService implements CaptionService {
 
   async captionForImage(imageContent: string): Promise<string> {
     try {
-      const { mediaType, base64 } = parseDataUrl(imageContent);
+      const source = this.imageSource(imageContent);
       const res = await this.client.messages.create({
         model: this.model,
         max_tokens: 100,
@@ -58,9 +58,7 @@ export class ClaudeCaptionService implements CaptionService {
           {
             role: 'user',
             content: [
-              // media_type passes through to Claude (server-validated). Gemini returns image/png|webp;
-              // an unsupported MIME would 400 and is absorbed by the FALLBACK_CAPTION catch below.
-              { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+              { type: 'image', source },
               { type: 'text', text: CAPTION_FOR_IMAGE_PROMPT },
             ],
           },
@@ -70,6 +68,17 @@ export class ClaudeCaptionService implements CaptionService {
     } catch {
       return FALLBACK_CAPTION;
     }
+  }
+
+  private imageSource(imageContent: string): unknown {
+    if (imageContent.startsWith('data:')) {
+      const { mediaType, base64 } = parseDataUrl(imageContent);
+      return { type: 'base64', media_type: mediaType, data: base64 };
+    }
+    if (imageContent.startsWith('https://')) {
+      return { type: 'url', url: imageContent };
+    }
+    throw new Error('unsupported image reference');
   }
 
   async seedCaption(): Promise<string> {

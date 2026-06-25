@@ -2,14 +2,29 @@ import type { AIServices } from './ai';
 import type { GameStore } from './store';
 import type { Chain, Game, Player, Step } from './types';
 
-export class GameEngine {
-  private counters: Record<string, number> = {};
+export type IdGenerator = (prefix: string) => string;
 
-  constructor(private store: GameStore, private ai: AIServices) {}
+function createCounterIdGenerator(): IdGenerator {
+  const counters: Record<string, number> = {};
+  return (prefix) => {
+    counters[prefix] = (counters[prefix] ?? 0) + 1;
+    return `${prefix}${counters[prefix]}`;
+  };
+}
+
+export class GameEngine {
+  private readonly idgen: IdGenerator;
+
+  constructor(
+    private store: GameStore,
+    private ai: AIServices,
+    idGenerator: IdGenerator = createCounterIdGenerator(),
+  ) {
+    this.idgen = idGenerator;
+  }
 
   private id(prefix: string): string {
-    this.counters[prefix] = (this.counters[prefix] ?? 0) + 1;
-    return `${prefix}${this.counters[prefix]}`;
+    return this.idgen(prefix);
   }
 
   getGame(gameId: string): Game {

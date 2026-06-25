@@ -56,6 +56,23 @@ describe('ClaudeCaptionService.captionForImage', () => {
     const svc = new ClaudeCaptionService(clientReplying('   '), {});
     expect(await svc.captionForImage(toDataUrl('image/png', 'QUJD'))).toBe(FALLBACK_CAPTION);
   });
+
+  it('sends an https URL as a URL image source', async () => {
+    const client = clientReplying('a dog in space');
+    const svc = new ClaudeCaptionService(client, {});
+    const caption = await svc.captionForImage('https://cdn.example.com/img/abc.png');
+    expect(caption).toBe('a dog in space');
+    const arg = (client.messages.create as any).mock.calls[0][0];
+    expect(arg.messages[0].content[0]).toEqual({
+      type: 'image',
+      source: { type: 'url', url: 'https://cdn.example.com/img/abc.png' },
+    });
+  });
+
+  it('falls back for an http URL (Claude URL source requires https)', async () => {
+    const svc = new ClaudeCaptionService(clientReplying('ignored'), {});
+    expect(await svc.captionForImage('http://cdn.example.com/img/abc.png')).toBe(FALLBACK_CAPTION);
+  });
 });
 
 describe('ClaudeCaptionService.seedCaption', () => {
