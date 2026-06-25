@@ -17,7 +17,15 @@ export interface GameView {
   pendingTasks: Step[];
 }
 
-export class GameService {
+export interface GameServicePort {
+  createGame(hostName: string, turnDeadlineMs: number): Promise<{ gameId: string; hostId: string }>;
+  joinGame(gameId: string, name: string): Promise<{ playerId: string; view: GameView }>;
+  startGame(gameId: string): Promise<Game>;
+  submitCaption(gameId: string, playerId: string, stepId: string, text: string): Promise<GameView>;
+  getState(gameId: string, playerId: string): Promise<GameView>;
+}
+
+export class GameService implements GameServicePort {
   private readonly now: () => number;
   private readonly maxRetries: number;
 
