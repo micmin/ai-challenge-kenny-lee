@@ -23,6 +23,10 @@ function post(body: unknown): Request {
   return new Request('http://test', { method: 'POST', body: JSON.stringify(body) });
 }
 
+function postRaw(raw: string): Request {
+  return new Request('http://test', { method: 'POST', body: raw });
+}
+
 describe('createGameHandler', () => {
   it('creates a game from a valid body', async () => {
     const svc = fakeService();
@@ -39,6 +43,16 @@ describe('createGameHandler', () => {
 
   it('rejects a non-positive turnDeadlineMs with 400', async () => {
     const res = await createGameHandler(fakeService(), post({ hostName: 'Ada', turnDeadlineMs: 0 }));
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects a malformed JSON body with 400', async () => {
+    const res = await createGameHandler(fakeService(), postRaw('not json'));
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects a non-object JSON body with 400', async () => {
+    const res = await createGameHandler(fakeService(), postRaw('[]'));
     expect(res.status).toBe(400);
   });
 });
@@ -110,5 +124,11 @@ describe('submitCaptionHandler', () => {
     const svc = fakeService({ submitCaption: vi.fn(async () => { throw new Error('not your turn'); }) });
     const res = await submitCaptionHandler(svc, 'g1', post({ playerId: 'p2', stepId: 's5', text: 'x' }));
     expect(res.status).toBe(409);
+  });
+
+  it('maps "step not found" to 404', async () => {
+    const svc = fakeService({ submitCaption: vi.fn(async () => { throw new Error('step not found: s99'); }) });
+    const res = await submitCaptionHandler(svc, 'g1', post({ playerId: 'p2', stepId: 's99', text: 'x' }));
+    expect(res.status).toBe(404);
   });
 });

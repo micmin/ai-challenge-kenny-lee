@@ -23,6 +23,7 @@ export function errorToResponse(err: unknown): Response {
   if (err instanceof ConcurrencyError) return json({ error: 'conflict, please retry' }, 409);
   if (err instanceof Error) {
     if (err.message.startsWith('Game not found')) return json({ error: err.message }, 404);
+    if (err.message.startsWith('step not found')) return json({ error: err.message }, 404);
     if (GAME_RULE_ERRORS.has(err.message)) return json({ error: err.message }, 409);
   }
   return json({ error: 'internal error' }, 500);

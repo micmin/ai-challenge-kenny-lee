@@ -26,6 +26,10 @@ describe('errorToResponse', () => {
     expect(errorToResponse(new Error('Game not found: g1')).status).toBe(404);
   });
 
+  it('maps a "step not found" error to 404', () => {
+    expect(errorToResponse(new Error('step not found: s99')).status).toBe(404);
+  });
+
   it('maps ConcurrencyError to 409', () => {
     expect(errorToResponse(new ConcurrencyError('too many')).status).toBe(409);
   });

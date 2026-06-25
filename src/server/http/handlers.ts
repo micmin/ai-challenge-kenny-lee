@@ -2,12 +2,16 @@ import type { GameServicePort } from '../game-service';
 import { BadRequestError, errorToResponse, json } from './responses';
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
+  let body: unknown;
   try {
-    const body = await request.json();
-    return (body ?? {}) as Record<string, unknown>;
+    body = await request.json();
   } catch {
     throw new BadRequestError('invalid JSON body');
   }
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    throw new BadRequestError('request body must be a JSON object');
+  }
+  return body as Record<string, unknown>;
 }
 
 function requireString(value: unknown, field: string): string {
@@ -51,7 +55,7 @@ export async function startGameHandler(service: GameServicePort, gameId: string,
 
 export async function getStateHandler(service: GameServicePort, gameId: string, request: Request): Promise<Response> {
   try {
-    const playerId = new URL(request.url).searchParams.get('playerId');
+    const playerId = new URL(request.url).searchParams.get('playerId')?.trim() || null;
     if (!playerId) throw new BadRequestError('playerId query parameter is required');
     return json(await service.getState(gameId, playerId));
   } catch (err) {
