@@ -11,5 +11,9 @@
   "devDependencies": {
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.106.0",
+    "@google/genai": "^2.10.0"
   }
 }
