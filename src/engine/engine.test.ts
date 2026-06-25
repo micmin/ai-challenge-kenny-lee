@@ -310,3 +310,22 @@ describe('GameEngine completion', () => {
     }
   });
 });
+
+describe('GameEngine injected id generator', () => {
+  it('uses an injected id generator for new ids', () => {
+    // Returns a deterministic id per prefix, so the assertion does not depend on
+    // the engine's internal order of id() calls.
+    const idgen = (prefix: string) => `${prefix}-X`;
+    const engine = new GameEngine(new GameStore(), new MockAI(), idgen);
+    const { gameId, hostId } = engine.createGame('Ada', 60_000, 0);
+    expect(gameId).toBe('g-X'); // game ids use the 'g' prefix
+    expect(hostId).toBe('p-X'); // player ids use the 'p' prefix
+  });
+
+  it('defaults to the per-prefix counter generator when none is injected (back-compat)', () => {
+    const engine = new GameEngine(new GameStore(), new MockAI());
+    const { gameId, hostId } = engine.createGame('Ada', 60_000, 0);
+    expect(gameId).toBe('g1');
+    expect(hostId).toBe('p1');
+  });
+});
