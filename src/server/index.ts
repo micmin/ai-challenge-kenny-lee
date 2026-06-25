@@ -1,0 +1,13 @@
+export { GameService, ConcurrencyError } from './game-service';
+export type { GameServiceDeps, GameView } from './game-service';
+export { InMemoryGameRepository } from './game-repository';
+export type { GameRepository, LoadedGame } from './game-repository';
+export { StorageImageService } from './storage-image-service';
+export type { ImageUploader, StorageImageOptions } from './storage-image-service';
+export { SupabaseGameRepository } from './supabase-game-repository';
+export type { GamesTableClient } from './supabase-game-repository';
+export { SupabaseImageUploader } from './supabase-image-uploader';
+export type { StorageBucketClient } from './supabase-image-uploader';
+export { uuidIdGenerator } from './id-generator';
+export { createGameService } from './wiring';
+export type { ServerEnv } from './wiring';
