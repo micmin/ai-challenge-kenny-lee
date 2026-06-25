@@ -51,6 +51,11 @@ describe('ClaudeCaptionService.captionForImage', () => {
     const svc = new ClaudeCaptionService(clientReplying('ignored'), {});
     expect(await svc.captionForImage('mock-image://x')).toBe(FALLBACK_CAPTION);
   });
+
+  it('treats a whitespace-only reply as empty and falls back', async () => {
+    const svc = new ClaudeCaptionService(clientReplying('   '), {});
+    expect(await svc.captionForImage(toDataUrl('image/png', 'QUJD'))).toBe(FALLBACK_CAPTION);
+  });
 });
 
 describe('ClaudeCaptionService.seedCaption', () => {
@@ -64,6 +69,13 @@ describe('ClaudeCaptionService.seedCaption', () => {
       messages: { create: vi.fn(async () => { throw new Error('boom'); }) },
     };
     const svc = new ClaudeCaptionService(client, {});
+    const seed = await svc.seedCaption();
+    expect(typeof seed).toBe('string');
+    expect(seed.length).toBeGreaterThan(0);
+  });
+
+  it('falls back to a non-empty seed when Claude returns no text', async () => {
+    const svc = new ClaudeCaptionService(clientReplying(undefined), {});
     const seed = await svc.seedCaption();
     expect(typeof seed).toBe('string');
     expect(seed.length).toBeGreaterThan(0);

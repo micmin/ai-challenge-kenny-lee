@@ -46,6 +46,7 @@ export class GeminiImageService implements ImageService {
           config: { numberOfImages: 1 },
         });
         const image = res.generatedImages?.[0]?.image;
+        // No bytes (transient/empty response): fall through to retry, then placeholder.
         if (image?.imageBytes) {
           return toDataUrl(image.mimeType ?? 'image/png', image.imageBytes);
         }

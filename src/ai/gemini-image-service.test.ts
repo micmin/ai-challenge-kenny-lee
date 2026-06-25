@@ -61,7 +61,10 @@ describe('GeminiImageService', () => {
   });
 
   it('falls back to the placeholder when the SDK returns no image bytes', async () => {
-    const svc = new GeminiImageService(clientReturning(undefined), { maxRetries: 1, sleep: noSleep });
+    const client = clientReturning(undefined);
+    const svc = new GeminiImageService(client, { maxRetries: 1, sleep: noSleep });
     expect(await svc.generate('x')).toBe(PLACEHOLDER_IMAGE);
+    // Empty-bytes is treated as transient: maxRetries: 1 => initial attempt + 1 retry = 2 calls.
+    expect(client.models.generateImages).toHaveBeenCalledTimes(2);
   });
 });
