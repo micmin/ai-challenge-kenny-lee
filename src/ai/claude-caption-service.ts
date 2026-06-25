@@ -58,6 +58,8 @@ export class ClaudeCaptionService implements CaptionService {
           {
             role: 'user',
             content: [
+              // media_type passes through to Claude (server-validated). Gemini returns image/png|webp;
+              // an unsupported MIME would 400 and is absorbed by the FALLBACK_CAPTION catch below.
               { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
               { type: 'text', text: CAPTION_FOR_IMAGE_PROMPT },
             ],

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GeminiImageService, PLACEHOLDER_IMAGE, type GenAiImageClient } from './gemini-image-service';
+import { parseDataUrl } from './data-url';
 
 const noSleep = async () => {};
 
@@ -66,5 +67,9 @@ describe('GeminiImageService', () => {
     expect(await svc.generate('x')).toBe(PLACEHOLDER_IMAGE);
     // Empty-bytes is treated as transient: maxRetries: 1 => initial attempt + 1 retry = 2 calls.
     expect(client.models.generateImages).toHaveBeenCalledTimes(2);
+  });
+
+  it('exposes a placeholder that is itself a parseable data URL', () => {
+    expect(() => parseDataUrl(PLACEHOLDER_IMAGE)).not.toThrow();
   });
 });
