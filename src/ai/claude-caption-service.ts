@@ -75,6 +75,8 @@ export class ClaudeCaptionService implements CaptionService {
       const { mediaType, base64 } = parseDataUrl(imageContent);
       return { type: 'base64', media_type: mediaType, data: base64 };
     }
+    // Claude's URL vision source requires HTTPS; http:// (and anything else)
+    // falls through to throw → caught by captionForImage → FALLBACK_CAPTION.
     if (imageContent.startsWith('https://')) {
       return { type: 'url', url: imageContent };
     }

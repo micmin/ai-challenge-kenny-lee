@@ -41,6 +41,9 @@ export class GameService {
 
   async joinGame(gameId: string, name: string): Promise<{ playerId: string; view: GameView }> {
     let playerId = '';
+    // On a conflict retry, mutate() re-runs this callback with a fresh engine, so
+    // playerId is reassigned to the id minted in the attempt that actually saved —
+    // it always matches the returned game state.
     const game = await this.mutate(gameId, (engine) => {
       playerId = engine.joinGame(gameId, name).playerId;
     });
