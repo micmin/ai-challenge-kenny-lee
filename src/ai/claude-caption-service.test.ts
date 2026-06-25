@@ -68,6 +68,11 @@ describe('ClaudeCaptionService.captionForImage', () => {
       source: { type: 'url', url: 'https://cdn.example.com/img/abc.png' },
     });
   });
+
+  it('falls back for an http URL (Claude URL source requires https)', async () => {
+    const svc = new ClaudeCaptionService(clientReplying('ignored'), {});
+    expect(await svc.captionForImage('http://cdn.example.com/img/abc.png')).toBe(FALLBACK_CAPTION);
+  });
 });
 
 describe('ClaudeCaptionService.seedCaption', () => {

@@ -75,7 +75,7 @@ export class ClaudeCaptionService implements CaptionService {
       const { mediaType, base64 } = parseDataUrl(imageContent);
       return { type: 'base64', media_type: mediaType, data: base64 };
     }
-    if (imageContent.startsWith('http://') || imageContent.startsWith('https://')) {
+    if (imageContent.startsWith('https://')) {
       return { type: 'url', url: imageContent };
     }
     throw new Error('unsupported image reference');
