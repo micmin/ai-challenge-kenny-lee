@@ -8,6 +8,7 @@ export function toDataUrl(mediaType: string, base64: string): string {
 }
 
 export function parseDataUrl(value: string): ParsedDataUrl {
+  // `s` (dotAll) flag: some base64 encoders wrap with newlines; `.*` must cross them.
   const match = value.match(/^data:([^;]+);base64,(.*)$/s);
   if (!match) throw new Error('not a base64 data URL');
   return { mediaType: match[1], base64: match[2] };
