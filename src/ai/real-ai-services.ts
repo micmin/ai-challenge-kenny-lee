@@ -22,7 +22,7 @@ export function createRealAIServices(env: RealAIEnv = process.env): AIServices {
     // The SDK clients are broader than our minimal interfaces; cast at this boundary only.
     image: new GeminiImageService(genai as unknown as GenAiImageClient, { model: env.IMAGE_MODEL }),
     caption: new ClaudeCaptionService(anthropic as unknown as ClaudeMessagesClient, {
-      model: env.CAPTION_MODEL ?? 'claude-haiku-4-5',
+      model: env.CAPTION_MODEL, // let the wrapper's constructor own the default
     }),
   };
 }
