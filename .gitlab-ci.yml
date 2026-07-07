@@ -18,6 +18,11 @@ verify:
     - npm install
     - npm run typecheck
     - npm test
+    # Confirm the Next.js app (page + API routes) actually compiles. Safe without
+    # secrets: the game service is wired lazily (first request), never at build
+    # time, so no API keys are read here. If Next ever tries to execute a route
+    # at build, add `export const dynamic = 'force-dynamic'` to that route.
+    - npm run build
   cache:
     key:
       files:
