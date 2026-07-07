@@ -1,5 +1,6 @@
 export { GameService, ConcurrencyError } from './game-service';
 export type { GameServiceDeps, GameView } from './game-service';
+export type { GameServicePort } from './game-service';
 export { InMemoryGameRepository } from './game-repository';
 export type { GameRepository, LoadedGame } from './game-repository';
 export { StorageImageService } from './storage-image-service';

@@ -1,4 +1,5 @@
 import type { ImageUploader } from './storage-image-service';
+import { describeError } from './describe-error';
 
 // Minimal shape of the Supabase Storage client this uploader uses.
 export interface StorageBucketClient {
@@ -17,7 +18,7 @@ export class SupabaseImageUploader implements ImageUploader {
 
   async upload(path: string, bytes: Uint8Array, contentType: string): Promise<string> {
     const { error } = await this.client.from(this.bucket).upload(path, bytes, { contentType, upsert: true });
-    if (error) throw new Error(`upload failed: ${String(error)}`);
+    if (error) throw new Error(`upload failed: ${describeError(error)}`);
     return this.client.from(this.bucket).getPublicUrl(path).data.publicUrl;
   }
 }

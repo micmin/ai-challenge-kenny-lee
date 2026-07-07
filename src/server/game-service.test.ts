@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { GameService, ConcurrencyError } from './game-service';
-import { InMemoryGameRepository, type GameRepository, type LoadedGame } from './game-repository';
+import { InMemoryGameRepository, type GameRepository } from './game-repository';
 import { MockAI } from '../engine/index';
 import { uuidIdGenerator } from './id-generator';
 import type { Game } from '../engine/index';
