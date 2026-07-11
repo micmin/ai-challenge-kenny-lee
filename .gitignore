@@ -9,3 +9,9 @@ next-env.d.ts
 
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
+
+# TypeScript incremental build cache
+tsconfig.tsbuildinfo
+
+# GitLab Runner (shell executor) working directory
+builds/
