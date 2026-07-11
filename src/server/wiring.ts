@@ -17,7 +17,9 @@ export interface ServerEnv {
   IMAGE_MODEL?: string;
 }
 
-export function createGameService(env: ServerEnv = process.env): GameService {
+export function createGameService(
+  env: ServerEnv = process.env as Record<string, string | undefined>,
+): GameService {
   if (!env.SUPABASE_URL) throw new Error('SUPABASE_URL is required');
   if (!env.SUPABASE_SERVICE_KEY) throw new Error('SUPABASE_SERVICE_KEY is required');
 

@@ -11,7 +11,9 @@ export interface RealAIEnv {
   IMAGE_MODEL?: string;
 }
 
-export function createRealAIServices(env: RealAIEnv = process.env): AIServices {
+export function createRealAIServices(
+  env: RealAIEnv = process.env as Record<string, string | undefined>,
+): AIServices {
   if (!env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is required');
   if (!env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is required');
 

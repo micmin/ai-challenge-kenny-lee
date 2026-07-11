@@ -6,7 +6,7 @@ const hasKeys = Boolean(process.env.ANTHROPIC_API_KEY && process.env.GEMINI_API_
 
 describe.skipIf(!hasKeys)('live AI smoke test (requires real API keys)', () => {
   it('generates a real image and captions it', async () => {
-    const ai = createRealAIServices(process.env);
+    const ai = createRealAIServices();
     const url = await ai.image.generate('a cat doing taxes, cartoon style');
     const { mediaType, base64 } = parseDataUrl(url);
     expect(mediaType.startsWith('image/')).toBe(true);
