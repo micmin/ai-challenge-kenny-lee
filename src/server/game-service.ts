@@ -95,9 +95,8 @@ export class GameService implements GameServicePort {
     for (let i = 0; i < aiCount; i += 1) {
       await this.joinGame(gameId, `AI ${i + 1}`);
     }
-    await this.startGame(gameId);
-    const started = await this.getState(gameId, hostId);
-    const seedStep = started.pendingTasks[0]; // the human's own seed caption (position 0)
+    const startedGame = await this.startGame(gameId);
+    const seedStep = this.viewFor(startedGame, hostId).pendingTasks[0]; // the human's own seed caption (position 0)
     const view = await this.submitCaption(gameId, hostId, seedStep.id, seed);
     return { gameId, hostId, view };
   }
@@ -105,6 +104,8 @@ export class GameService implements GameServicePort {
   async stepAi(gameId: string, humanPlayerId: string): Promise<StepResult> {
     let filled = false;
     let authorName: string | null = null;
+    // On a conflict retry, mutate() re-runs this callback, so filled/authorName
+    // reflect the attempt that actually saved (same pattern as joinGame).
     const game = await this.mutate(gameId, async (engine) => {
       const r = await engine.fillNextAiCaption(gameId, humanPlayerId, this.now());
       filled = r.filled;
