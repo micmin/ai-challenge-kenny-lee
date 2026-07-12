@@ -345,6 +345,42 @@ describe('GameEngine completion', () => {
   });
 });
 
+describe('pickWinner', () => {
+  it('records the winner and completes the game from reveal', async () => {
+    const store = new GameStore();
+    const engine = new GameEngine(store, new MockAI());
+    const { gameId, hostId } = engine.createGame('You', 60_000, 0);
+    engine.joinGame(gameId, 'AI 1');
+    engine.startGame(gameId, 0);
+
+    let guard = 0;
+    while (engine.getGame(gameId).status !== 'reveal' && guard++ < 100) {
+      const tasks = engine.getPendingTasks(gameId, hostId);
+      if (tasks.length) {
+        await engine.submitCaption(gameId, hostId, tasks[0].id, 'human text', 0);
+      } else if (!(await engine.fillNextAiCaption(gameId, hostId, 0)).filled) {
+        break;
+      }
+    }
+    expect(engine.getGame(gameId).status).toBe('reveal');
+
+    const chainId = engine.getGame(gameId).chains[0].id;
+    engine.pickWinner(gameId, chainId);
+
+    expect(engine.getGame(gameId).status).toBe('done');
+    expect(engine.getGame(gameId).winnerChainId).toBe(chainId);
+  });
+
+  it('rejects picking before reveal', () => {
+    const store = new GameStore();
+    const engine = new GameEngine(store, new MockAI());
+    const { gameId } = engine.createGame('You', 60_000, 0);
+    engine.joinGame(gameId, 'AI 1');
+    engine.startGame(gameId, 0);
+    expect(() => engine.pickWinner(gameId, 'anything')).toThrow('game is not in reveal');
+  });
+});
+
 describe('GameEngine injected id generator', () => {
   it('uses an injected id generator for new ids', () => {
     // Returns a deterministic id per prefix, so the assertion does not depend on

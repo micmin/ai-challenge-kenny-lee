@@ -35,4 +35,5 @@ export interface Game {
   players: Player[];
   chains: Chain[];
   createdAt: number;
+  winnerChainId?: string;
 }

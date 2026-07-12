@@ -250,4 +250,13 @@ export class GameEngine {
     const game = this.store.get(gameId);
     return game.chains.length > 0 && game.chains.every((c) => this.chainIsComplete(game, c));
   }
+
+  pickWinner(gameId: string, chainId: string): void {
+    const game = this.store.get(gameId);
+    if (game.status !== 'reveal') throw new Error('game is not in reveal');
+    if (!game.chains.some((c) => c.id === chainId)) throw new Error('chain not found');
+    game.winnerChainId = chainId;
+    game.status = 'done';
+    this.store.save(game);
+  }
 }
