@@ -121,6 +121,22 @@ export class GameEngine {
     this.store.save(game);
   }
 
+  // Fill a pending caption via AI (seed prompt at position 0, else caption-for-image),
+  // mark it auto-filled, and advance the chain. Shared by processDeadlines and fillNextAiCaption.
+  private async fillCaption(game: Game, chain: Chain, step: Step, now: number): Promise<void> {
+    if (step.position === 0) {
+      step.content = await this.ai.caption.seedCaption();
+    } else {
+      const prevImage = chain.steps.find((s) => s.position === step.position - 1);
+      if (!prevImage) throw new Error('missing preceding image step');
+      step.content = await this.ai.caption.captionForImage(prevImage.content);
+    }
+    step.status = 'filled';
+    step.isAutoFilled = true;
+    step.deadline = null;
+    await this.advanceChain(game, chain, step, now);
+  }
+
   async processDeadlines(gameId: string, now: number): Promise<void> {
     const game = this.store.get(gameId);
     if (game.status !== 'active') return;
@@ -130,21 +146,42 @@ export class GameEngine {
         (s) => s.type === 'caption' && s.status === 'pending' && s.deadline !== null && s.deadline <= now,
       );
       for (const step of overdue) {
-        if (step.position === 0) {
-          step.content = await this.ai.caption.seedCaption();
-        } else {
-          const prevImage = chain.steps.find((s) => s.position === step.position - 1);
-          if (!prevImage) throw new Error('missing preceding image step');
-          step.content = await this.ai.caption.captionForImage(prevImage.content);
-        }
-        step.status = 'filled';
-        step.isAutoFilled = true;
-        step.deadline = null;
-        await this.advanceChain(game, chain, step, now);
+        await this.fillCaption(game, chain, step, now);
       }
     }
     this.refreshStatus(game);
     this.store.save(game);
+  }
+
+  // Fill the next pending caption owned by a non-human (AI) seat, one per call.
+  async fillNextAiCaption(
+    gameId: string,
+    humanPlayerId: string,
+    now: number,
+  ): Promise<{ filled: boolean; authorName: string | null }> {
+    const game = this.store.get(gameId);
+    if (game.status !== 'active') return { filled: false, authorName: null };
+
+    // Find the pending AI caption with the smallest position (prioritizes seeds at position 0).
+    let target: { chain: Chain; step: Step } | null = null;
+    for (const chain of game.chains) {
+      for (const step of chain.steps) {
+        if (step.type === 'caption' && step.status === 'pending' && step.authorPlayerId !== humanPlayerId) {
+          if (!target || step.position < target.step.position) {
+            target = { chain, step };
+          }
+        }
+      }
+    }
+
+    if (target) {
+      const author = game.players.find((p) => p.id === target.step.authorPlayerId) ?? null;
+      await this.fillCaption(game, target.chain, target.step, now);
+      this.refreshStatus(game);
+      this.store.save(game);
+      return { filled: true, authorName: author ? author.name : null };
+    }
+    return { filled: false, authorName: null };
   }
 
   private locateStep(game: Game, stepId: string): { chain: Chain; step: Step } | null {

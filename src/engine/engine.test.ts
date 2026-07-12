@@ -276,6 +276,40 @@ describe('GameEngine deadline auto-fill', () => {
   });
 });
 
+describe('fillNextAiCaption', () => {
+  it('fills the next non-human pending caption and renders its image', async () => {
+    const store = new GameStore();
+    const engine = new GameEngine(store, new MockAI());
+    const { gameId, hostId } = engine.createGame('You', 60_000, 0);
+    engine.joinGame(gameId, 'AI 1');
+    engine.startGame(gameId, 0);
+    const humanSeed = engine.getPendingTasks(gameId, hostId)[0];
+    await engine.submitCaption(gameId, hostId, humanSeed.id, 'a cat doing taxes', 0);
+
+    const r = await engine.fillNextAiCaption(gameId, hostId, 0);
+
+    expect(r.filled).toBe(true);
+    expect(r.authorName).toBe('AI 1');
+    const aiChain = engine.getGame(gameId).chains.find((c) => c.seedPlayerId !== hostId)!;
+    expect(aiChain.steps.some((s) => s.type === 'image')).toBe(true);
+    expect(aiChain.steps[0].isAutoFilled).toBe(true);
+  });
+
+  it('returns filled=false when only human captions are pending', async () => {
+    const store = new GameStore();
+    const engine = new GameEngine(store, new MockAI());
+    const { gameId, hostId } = engine.createGame('You', 60_000, 0);
+    engine.joinGame(gameId, 'AI 1');
+    engine.startGame(gameId, 0);
+
+    let guard = 0;
+    let r = await engine.fillNextAiCaption(gameId, hostId, 0);
+    while (r.filled && guard++ < 50) r = await engine.fillNextAiCaption(gameId, hostId, 0);
+
+    expect(r.filled).toBe(false);
+  });
+});
+
 describe('GameEngine completion', () => {
   it('flips to reveal and reports complete once all chains are full', async () => {
     const engine = newEngine();
