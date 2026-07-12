@@ -16,6 +16,7 @@ const GAME_RULE_ERRORS = new Set([
   'not your turn',
   'game is not active',
   'step is not an open caption',
+  'game is not in reveal',
 ]);
 
 export function errorToResponse(err: unknown): Response {
@@ -24,6 +25,7 @@ export function errorToResponse(err: unknown): Response {
   if (err instanceof Error) {
     if (err.message.startsWith('Game not found')) return json({ error: err.message }, 404);
     if (err.message.startsWith('step not found')) return json({ error: err.message }, 404);
+    if (err.message.startsWith('chain not found')) return json({ error: err.message }, 404);
     if (GAME_RULE_ERRORS.has(err.message)) return json({ error: err.message }, 409);
   }
   return json({ error: 'internal error' }, 500);

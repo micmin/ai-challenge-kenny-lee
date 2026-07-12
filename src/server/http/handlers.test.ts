@@ -5,6 +5,9 @@ import {
   startGameHandler,
   getStateHandler,
   submitCaptionHandler,
+  createSoloGameHandler,
+  stepHandler,
+  pickWinnerHandler,
 } from './handlers';
 import type { GameServicePort } from '../game-service';
 
@@ -15,6 +18,9 @@ function fakeService(overrides: Partial<GameServicePort> = {}): GameServicePort 
     startGame: vi.fn(async () => ({ id: 'g1', status: 'active' } as any)),
     submitCaption: vi.fn(async () => ({ game: { id: 'g1' } as any, pendingTasks: [] })),
     getState: vi.fn(async () => ({ game: { id: 'g1' } as any, pendingTasks: [] })),
+    createSoloGame: vi.fn(async () => ({ gameId: 'g1', hostId: 'p1', view: { game: { id: 'g1' } as any, pendingTasks: [] } })),
+    stepAi: vi.fn(async () => ({ view: { game: { id: 'g1', status: 'active' } as any, pendingTasks: [] }, filled: false, authorName: null })),
+    pickWinner: vi.fn(async () => ({ id: 'g1', status: 'done' } as any)),
     ...overrides,
   };
 }
@@ -130,5 +136,48 @@ describe('submitCaptionHandler', () => {
     const svc = fakeService({ submitCaption: vi.fn(async () => { throw new Error('step not found: s99'); }) });
     const res = await submitCaptionHandler(svc, 'g1', post({ playerId: 'p2', stepId: 's99', text: 'x' }));
     expect(res.status).toBe(404);
+  });
+});
+
+describe('createSoloGameHandler', () => {
+  it('creates a solo game from a valid body', async () => {
+    const svc = fakeService();
+    const res = await createSoloGameHandler(svc, post({ seed: 'a cat', aiCount: 3 }));
+    expect(res.status).toBe(201);
+    expect(svc.createSoloGame).toHaveBeenCalledWith('a cat', 3);
+  });
+  it('rejects a blank seed with 400', async () => {
+    const res = await createSoloGameHandler(fakeService(), post({ seed: ' ', aiCount: 3 }));
+    expect(res.status).toBe(400);
+  });
+  it('rejects aiCount out of range with 400', async () => {
+    const res = await createSoloGameHandler(fakeService(), post({ seed: 'a cat', aiCount: 0 }));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('stepHandler', () => {
+  it('steps with a valid playerId', async () => {
+    const svc = fakeService();
+    const res = await stepHandler(svc, 'g1', post({ playerId: 'p1' }));
+    expect(res.status).toBe(200);
+    expect(svc.stepAi).toHaveBeenCalledWith('g1', 'p1');
+  });
+  it('rejects a missing playerId with 400', async () => {
+    const res = await stepHandler(fakeService(), 'g1', post({}));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('pickWinnerHandler', () => {
+  it('records a pick with a valid chainId', async () => {
+    const svc = fakeService();
+    const res = await pickWinnerHandler(svc, 'g1', post({ chainId: 'c1' }));
+    expect(res.status).toBe(200);
+    expect(svc.pickWinner).toHaveBeenCalledWith('g1', 'c1');
+  });
+  it('rejects a missing chainId with 400', async () => {
+    const res = await pickWinnerHandler(fakeService(), 'g1', post({}));
+    expect(res.status).toBe(400);
   });
 });

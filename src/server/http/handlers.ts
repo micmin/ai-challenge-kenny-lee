@@ -74,3 +74,37 @@ export async function submitCaptionHandler(service: GameServicePort, gameId: str
     return errorToResponse(err);
   }
 }
+
+export async function createSoloGameHandler(service: GameServicePort, request: Request): Promise<Response> {
+  try {
+    const body = await readJson(request);
+    const seed = requireString(body.seed, 'seed');
+    const aiCount = body.aiCount;
+    if (typeof aiCount !== 'number' || !Number.isInteger(aiCount) || aiCount < 1 || aiCount > 7) {
+      throw new BadRequestError('aiCount must be an integer between 1 and 7');
+    }
+    return json(await service.createSoloGame(seed, aiCount), 201);
+  } catch (err) {
+    return errorToResponse(err);
+  }
+}
+
+export async function stepHandler(service: GameServicePort, gameId: string, request: Request): Promise<Response> {
+  try {
+    const body = await readJson(request);
+    const playerId = requireString(body.playerId, 'playerId');
+    return json(await service.stepAi(gameId, playerId));
+  } catch (err) {
+    return errorToResponse(err);
+  }
+}
+
+export async function pickWinnerHandler(service: GameServicePort, gameId: string, request: Request): Promise<Response> {
+  try {
+    const body = await readJson(request);
+    const chainId = requireString(body.chainId, 'chainId');
+    return json(await service.pickWinner(gameId, chainId));
+  } catch (err) {
+    return errorToResponse(err);
+  }
+}
