@@ -4,6 +4,14 @@ import type { GameRepository } from './game-repository';
 
 export class ConcurrencyError extends Error {}
 
+export const SOLO_TURN_DEADLINE_MS = 1000 * 60 * 60 * 24 * 365; // 1 year: deadlines never fire in solo play
+
+export interface StepResult {
+  view: GameView;
+  filled: boolean;
+  authorName: string | null;
+}
+
 export interface GameServiceDeps {
   repository: GameRepository;
   ai: AIServices;
@@ -23,6 +31,9 @@ export interface GameServicePort {
   startGame(gameId: string): Promise<Game>;
   submitCaption(gameId: string, playerId: string, stepId: string, text: string): Promise<GameView>;
   getState(gameId: string, playerId: string): Promise<GameView>;
+  createSoloGame(seed: string, aiCount: number): Promise<{ gameId: string; hostId: string; view: GameView }>;
+  stepAi(gameId: string, humanPlayerId: string): Promise<StepResult>;
+  pickWinner(gameId: string, chainId: string): Promise<Game>;
 }
 
 export class GameService implements GameServicePort {
@@ -74,6 +85,36 @@ export class GameService implements GameServicePort {
   async getState(gameId: string, playerId: string): Promise<GameView> {
     const game = await this.mutate(gameId, (engine) => engine.processDeadlines(gameId, this.now()));
     return this.viewFor(game, playerId);
+  }
+
+  async createSoloGame(
+    seed: string,
+    aiCount: number,
+  ): Promise<{ gameId: string; hostId: string; view: GameView }> {
+    const { gameId, hostId } = await this.createGame('You', SOLO_TURN_DEADLINE_MS);
+    for (let i = 0; i < aiCount; i += 1) {
+      await this.joinGame(gameId, `AI ${i + 1}`);
+    }
+    await this.startGame(gameId);
+    const started = await this.getState(gameId, hostId);
+    const seedStep = started.pendingTasks[0]; // the human's own seed caption (position 0)
+    const view = await this.submitCaption(gameId, hostId, seedStep.id, seed);
+    return { gameId, hostId, view };
+  }
+
+  async stepAi(gameId: string, humanPlayerId: string): Promise<StepResult> {
+    let filled = false;
+    let authorName: string | null = null;
+    const game = await this.mutate(gameId, async (engine) => {
+      const r = await engine.fillNextAiCaption(gameId, humanPlayerId, this.now());
+      filled = r.filled;
+      authorName = r.authorName;
+    });
+    return { view: this.viewFor(game, humanPlayerId), filled, authorName };
+  }
+
+  async pickWinner(gameId: string, chainId: string): Promise<Game> {
+    return this.mutate(gameId, (engine) => engine.pickWinner(gameId, chainId));
   }
 
   private async mutate(gameId: string, fn: (engine: GameEngine) => void | Promise<void>): Promise<Game> {

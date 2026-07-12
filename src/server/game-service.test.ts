@@ -109,3 +109,27 @@ describe('GameService lifecycle', () => {
     expect(saves).toBe(savesBefore);
   });
 });
+
+describe('solo game', () => {
+  it('plays a full solo game: create → step loop → reveal → pickWinner', async () => {
+    const svc = newService();
+    const { gameId, hostId, view } = await svc.createSoloGame('a cat doing taxes', 2);
+    expect(view.game.players).toHaveLength(3); // You + AI 1 + AI 2
+
+    let cur = view;
+    let guard = 0;
+    while (cur.game.status !== 'reveal' && guard++ < 200) {
+      let stepGuard = 0;
+      let stepped = await svc.stepAi(gameId, hostId);
+      while (stepped.filled && stepGuard++ < 200) stepped = await svc.stepAi(gameId, hostId);
+      cur = stepped.view;
+      if (cur.game.status === 'reveal') break;
+      cur = await svc.submitCaption(gameId, hostId, cur.pendingTasks[0].id, 'human caption');
+    }
+    expect(cur.game.status).toBe('reveal');
+
+    const done = await svc.pickWinner(gameId, cur.game.chains[0].id);
+    expect(done.status).toBe('done');
+    expect(done.winnerChainId).toBe(cur.game.chains[0].id);
+  });
+});
