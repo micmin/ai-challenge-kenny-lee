@@ -15,3 +15,6 @@ tsconfig.tsbuildinfo
 
 # GitLab Runner (shell executor) working directory
 builds/
+
+# GitLab Runner (shell executor) cache
+cache/
