@@ -13,7 +13,7 @@ export function StartScreen({ busy, onStart }: { busy: boolean; onStart: (seed: 
       <p>You play one seat; the AI plays the rest and draws every picture.</p>
       <label>AI opponents:{' '}
         <select value={aiCount} onChange={(e) => setAiCount(Number(e.target.value))} disabled={busy}>
-          {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+          {[1, 2, 3, 4, 5, 6, 7].map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
       </label>
       <p style={{ marginTop: 12 }}>Your opening idea:</p>

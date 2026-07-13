@@ -154,6 +154,10 @@ describe('createSoloGameHandler', () => {
     const res = await createSoloGameHandler(fakeService(), post({ seed: 'a cat', aiCount: 0 }));
     expect(res.status).toBe(400);
   });
+  it('rejects aiCount above range with 400', async () => {
+    const res = await createSoloGameHandler(fakeService(), post({ seed: 'a cat', aiCount: 8 }));
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('stepHandler', () => {
@@ -179,5 +183,16 @@ describe('pickWinnerHandler', () => {
   it('rejects a missing chainId with 400', async () => {
     const res = await pickWinnerHandler(fakeService(), 'g1', post({}));
     expect(res.status).toBe(400);
+  });
+  it('maps "game is not in reveal" to 409', async () => {
+    const svc = fakeService({ pickWinner: vi.fn(async () => { throw new Error('game is not in reveal'); }) });
+    const res = await pickWinnerHandler(svc, 'g1', post({ chainId: 'c1' }));
+    expect(res.status).toBe(409);
+  });
+
+  it('maps "chain not found" to 404', async () => {
+    const svc = fakeService({ pickWinner: vi.fn(async () => { throw new Error('chain not found'); }) });
+    const res = await pickWinnerHandler(svc, 'g1', post({ chainId: 'c9' }));
+    expect(res.status).toBe(404);
   });
 });
