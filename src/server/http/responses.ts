@@ -1,4 +1,5 @@
 import { ConcurrencyError } from '../game-service';
+import { describeError } from '../describe-error';
 
 export class BadRequestError extends Error {}
 
@@ -28,5 +29,10 @@ export function errorToResponse(err: unknown): Response {
     if (err.message.startsWith('chain not found')) return json({ error: err.message }, 404);
     if (GAME_RULE_ERRORS.has(err.message)) return json({ error: err.message }, 409);
   }
-  return json({ error: 'internal error' }, 500);
+  // Log unexpected errors server-side so they are not silently swallowed.
+  const detail = describeError(err);
+  console.error('[api] unexpected error:', detail);
+  // TEMP (deploy debugging): surface the detail to the client; revert to a bare
+  // { error: 'internal error' } once the Supabase/env issue is diagnosed.
+  return json({ error: 'internal error', detail }, 500);
 }
