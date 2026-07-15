@@ -31,7 +31,8 @@ export function createGameService(
 
   // Reuse Plan 2's AI services (validates ANTHROPIC/GEMINI keys); wrap only the image service.
   const base = createRealAIServices(env);
-  const uploader = new SupabaseImageUploader(supabase as unknown as StorageBucketClient, bucket);
+  // Storage lives on `supabase.storage`, NOT `supabase.from` (that is the DB/PostgREST builder).
+  const uploader = new SupabaseImageUploader(supabase.storage as unknown as StorageBucketClient, bucket);
   const ai: AIServices = {
     image: new StorageImageService(base.image, uploader, { placeholderUrl }),
     caption: base.caption,
