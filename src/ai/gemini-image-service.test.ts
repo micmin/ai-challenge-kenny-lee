@@ -1,8 +1,16 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GeminiImageService, PLACEHOLDER_IMAGE, type GenAiImageClient } from './gemini-image-service';
 import { parseDataUrl } from './data-url';
 
 const noSleep = async () => {};
+
+// The service logs warnings on retry/fallback paths; keep test output pristine.
+beforeEach(() => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function clientReturning(imageBytes: string | undefined, mimeType?: string): GenAiImageClient {
   return {

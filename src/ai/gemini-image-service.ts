@@ -38,6 +38,7 @@ export class GeminiImageService implements ImageService {
   }
 
   async generate(caption: string): Promise<string> {
+    const attempts = this.maxRetries + 1;
     for (let attempt = 0; attempt <= this.maxRetries; attempt += 1) {
       try {
         const res = await this.client.models.generateImages({
@@ -46,15 +47,22 @@ export class GeminiImageService implements ImageService {
           config: { numberOfImages: 1 },
         });
         const image = res.generatedImages?.[0]?.image;
-        // No bytes (transient/empty response): fall through to retry, then placeholder.
         if (image?.imageBytes) {
           return toDataUrl(image.mimeType ?? 'image/png', image.imageBytes);
         }
-      } catch {
-        // fall through to retry/backoff below
+        // Response arrived with no image bytes — usually a content-safety filter
+        // returning an empty result rather than throwing. Log so it isn't silent.
+        console.warn(
+          `[imagen] no image bytes (attempt ${attempt + 1}/${attempts}); likely a safety filter or empty response.`,
+        );
+      } catch (err) {
+        // Thrown errors are typically rate limits / quota / network. Log the reason.
+        const detail = err instanceof Error ? err.message : String(err);
+        console.warn(`[imagen] request failed (attempt ${attempt + 1}/${attempts}): ${detail}`);
       }
       if (attempt < this.maxRetries) await this.sleep(200 * (attempt + 1));
     }
+    console.warn(`[imagen] all ${attempts} attempts failed; using placeholder. caption: ${JSON.stringify(caption.slice(0, 120))}`);
     return PLACEHOLDER_IMAGE;
   }
 }
