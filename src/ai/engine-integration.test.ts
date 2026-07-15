@@ -7,8 +7,8 @@ import { toDataUrl } from './data-url';
 function fakeAI(): AIServices {
   const genai: GenAiImageClient = {
     models: {
-      generateImages: vi.fn(async () => ({
-        generatedImages: [{ image: { imageBytes: 'QUJD', mimeType: 'image/png' } }],
+      generateContent: vi.fn(async () => ({
+        candidates: [{ content: { parts: [{ inlineData: { data: 'QUJD', mimeType: 'image/png' } }] } }],
       })),
     },
   };

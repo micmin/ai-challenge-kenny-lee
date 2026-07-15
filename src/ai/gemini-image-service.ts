@@ -2,15 +2,16 @@ import type { ImageService } from '../engine/index';
 import { toDataUrl } from './data-url';
 
 // Minimal shape this service depends on. The real `GoogleGenAI` instance
-// satisfies it structurally (`ai.models.generateImages`).
+// satisfies it structurally (`ai.models.generateContent`). Google's Imagen
+// (`generateImages`) models were retired for new accounts; current image
+// generation uses a Gemini "Nano Banana" model via `generateContent`, which
+// returns the image as an inline-data part.
 export interface GenAiImageClient {
   models: {
-    generateImages(args: {
-      model: string;
-      prompt: string;
-      config?: { numberOfImages?: number };
-    }): Promise<{
-      generatedImages?: Array<{ image?: { imageBytes?: string; mimeType?: string } }>;
+    generateContent(args: { model: string; contents: string }): Promise<{
+      candidates?: Array<{
+        content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string }; text?: string }> };
+      }>;
     }>;
   };
 }
@@ -32,7 +33,7 @@ export class GeminiImageService implements ImageService {
   private readonly sleep: (ms: number) => Promise<void>;
 
   constructor(private readonly client: GenAiImageClient, opts: GeminiImageOptions = {}) {
-    this.model = opts.model ?? 'imagen-4.0-generate-001';
+    this.model = opts.model ?? 'gemini-2.5-flash-image';
     this.maxRetries = opts.maxRetries ?? 2;
     this.sleep = opts.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   }
@@ -41,28 +42,28 @@ export class GeminiImageService implements ImageService {
     const attempts = this.maxRetries + 1;
     for (let attempt = 0; attempt <= this.maxRetries; attempt += 1) {
       try {
-        const res = await this.client.models.generateImages({
+        const res = await this.client.models.generateContent({
           model: this.model,
-          prompt: caption,
-          config: { numberOfImages: 1 },
+          contents: caption,
         });
-        const image = res.generatedImages?.[0]?.image;
-        if (image?.imageBytes) {
-          return toDataUrl(image.mimeType ?? 'image/png', image.imageBytes);
+        const parts = res.candidates?.[0]?.content?.parts ?? [];
+        const inline = parts.find((p) => p.inlineData?.data)?.inlineData;
+        if (inline?.data) {
+          return toDataUrl(inline.mimeType ?? 'image/png', inline.data);
         }
-        // Response arrived with no image bytes — usually a content-safety filter
-        // returning an empty result rather than throwing. Log so it isn't silent.
+        // Response arrived with no image part — usually a content-safety filter
+        // or a text-only reply. Log so it isn't silent.
         console.warn(
-          `[imagen] no image bytes (attempt ${attempt + 1}/${attempts}); likely a safety filter or empty response.`,
+          `[image] no image in response (attempt ${attempt + 1}/${attempts}); likely a safety filter or text-only reply.`,
         );
       } catch (err) {
-        // Thrown errors are typically rate limits / quota / network. Log the reason.
+        // Thrown errors are typically rate limits / quota / bad model / network.
         const detail = err instanceof Error ? err.message : String(err);
-        console.warn(`[imagen] request failed (attempt ${attempt + 1}/${attempts}): ${detail}`);
+        console.warn(`[image] request failed (attempt ${attempt + 1}/${attempts}): ${detail}`);
       }
       if (attempt < this.maxRetries) await this.sleep(200 * (attempt + 1));
     }
-    console.warn(`[imagen] all ${attempts} attempts failed; using placeholder. caption: ${JSON.stringify(caption.slice(0, 120))}`);
+    console.warn(`[image] all ${attempts} attempts failed; using placeholder. caption: ${JSON.stringify(caption.slice(0, 120))}`);
     return PLACEHOLDER_IMAGE;
   }
 }
