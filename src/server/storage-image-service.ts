@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { ImageService } from '../engine/index';
 import { parseDataUrl, PLACEHOLDER_IMAGE } from '../ai/index';
+import { describeError } from './describe-error';
 
 export interface ImageUploader {
   /** Uploads bytes and returns the public URL. */
@@ -37,7 +38,10 @@ export class StorageImageService implements ImageService {
       const ext = mediaType.split('/')[1] ?? 'png';
       const path = `${this.keyPrefix}${this.newKey()}.${ext}`;
       return await this.uploader.upload(path, bytes, mediaType);
-    } catch {
+    } catch (err) {
+      // Generation succeeded but the storage step failed (upload/parse/bucket).
+      // Fall back to the placeholder, but log so it isn't silent.
+      console.warn(`[image] storage step failed; using placeholder: ${describeError(err)}`);
       return this.placeholderUrl;
     }
   }

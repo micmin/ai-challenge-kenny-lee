@@ -1,10 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StorageImageService, type ImageUploader } from './storage-image-service';
 import { PLACEHOLDER_IMAGE } from '../ai/index';
 import { toDataUrl } from '../ai/index';
 import type { ImageService } from '../engine/index';
 
 const PLACEHOLDER_URL = 'https://cdn.example.com/images/placeholder.png';
+
+// The service logs a warning on the fallback path; keep test output pristine.
+beforeEach(() => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function innerReturning(dataUrl: string): ImageService {
   return { generate: vi.fn(async () => dataUrl) };
